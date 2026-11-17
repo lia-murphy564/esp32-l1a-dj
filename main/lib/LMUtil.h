@@ -6,6 +6,11 @@
 
 namespace LMUtil
 {
+  int add(int a, int b)
+  {
+    return a + b;
+  }
+
   template <typename T>
   constexpr T clamp(T v, T l, T h) {
     return v < l ? l : (h < v ? h : v);
