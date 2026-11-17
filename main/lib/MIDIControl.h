@@ -1,7 +1,8 @@
 #pragma once
 #include <Arduino.h>
-// #include "MIDIUSB.h" 
-#include <mutex> 
+// #include "MIDIUSB.h"
+#include <algorithm>
+#include <mutex>
 #include <vector>
 #include "Peripheral.h"
 #include "MIDIOut.h"
@@ -12,8 +13,8 @@ template <typename T>
 class RegistryBase
 {
 public:
-  RegistryBase() {};
-  ~RegistryBase() {};
+  RegistryBase() {}
+  ~RegistryBase() {}
 
   static void add(T *obj)
   {
@@ -43,7 +44,7 @@ public:
   }
 
 private:
-  static std::vector<T*>& instances() 
+  static std::vector<T*>& instances()
   {
     static std::vector<T*> v;
     return v;
@@ -60,20 +61,9 @@ class MIDIController : private RegistryBase<Peripheral::PeripheralBase>
 {
 public:
   // Todo: duplicate checking
-  void addControl(Peripheral::PeripheralBase &control)
-  {
-    return add(&control);
-  }
-
-  void removeControl(Peripheral::PeripheralBase &control)
-  {
-    return remove(&control);
-  }
-
-  std::size_t controlCount() const
-  {
-    return count();
-  }
+  void addControl(Peripheral::PeripheralBase &control);
+  void removeControl(Peripheral::PeripheralBase &control);
+  std::size_t controlCount() const;
 
   // PeripheralHandle::PeripheralBase getControl(PeripheralHandle::PeripheralID id) const
   // {
@@ -84,33 +74,12 @@ public:
   //   return nullptr;
   // }
 
-  void setOutput(MIDIOut &midiOut)
-  {
-    _midiOut = &midiOut;
-  }
+  void setOutput(MIDIOut &midiOut) { _midiOut = &midiOut; }
 
-  void sendMidi()
-  {
-    if (!_midiOut) return;
-    forEach([this](Peripheral::PeripheralBase &c)
-    {
-      c.send(*_midiOut);
-    });
-  }
-
-  void setup()
-  {
-    forEach([](Peripheral::PeripheralBase &c) { c.setup(); });
-  }
-
-  void update()
-  {
-    forEach([](Peripheral::PeripheralBase &c) { c.update(); });
-  }
+  void sendMidi();
+  void setup();
+  void update();
 
 private:
   MIDIOut *_midiOut = nullptr;
 };
-
-
-
