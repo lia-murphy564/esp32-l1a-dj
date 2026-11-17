@@ -1,8 +1,6 @@
 #include "Communication.h"
 #include <WiFi.h>
 
-uint8_t broadcastAddr[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}; // placeholder
-
 ComLink_ESPNow::ComLink_ESPNow(ComRole role)
   : role(role) {}
 

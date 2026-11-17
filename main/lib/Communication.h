@@ -2,6 +2,8 @@
 #include <Arduino.h>
 #include <esp_now.h>
 
+uint8_t broadcastAddr[] = {0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF}; // placeholder
+
 struct __attribute__((packed)) ControlMsg {
   uint8_t  type;
   uint8_t  control;

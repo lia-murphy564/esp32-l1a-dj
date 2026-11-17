@@ -21,10 +21,10 @@ target_include_directories(host_fakes INTERFACE ${CMAKE_CURRENT_SOURCE_DIR}/fake
 # Code under test: one library per module
 # ---------------------------------------------------------------------------
 
-add_library(lmutil STATIC
-    ${MAIN_DIR}/src/LMUtil.cpp)
-target_include_directories(lmutil PUBLIC ${MAIN_DIR}/lib)
-target_link_libraries(lmutil PUBLIC host_fakes)
+# Header-only
+add_library(lmutil INTERFACE)
+target_include_directories(lmutil INTERFACE ${MAIN_DIR}/lib)
+target_link_libraries(lmutil INTERFACE host_fakes)
 
 # Example of a module with .cpp files (uncomment and adapt):
 # add_library(controlbase STATIC
