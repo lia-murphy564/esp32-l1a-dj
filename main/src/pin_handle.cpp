@@ -1,4 +1,4 @@
-#include "PinHandle.h"
+#include "pin_handle.h"
 
 PinHandle::PinHandle(PinAddress pin)
   : _pin(pin), _hasPin(true) {}

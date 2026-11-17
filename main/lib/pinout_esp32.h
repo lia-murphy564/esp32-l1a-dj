@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 
 enum class PinAddress : uint8_t
 {

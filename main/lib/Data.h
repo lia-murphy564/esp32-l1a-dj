@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdint>
+
 // #include <Arduino.h>
 // #include "pinout_esp32.h"
 // #include "pin_handle.h"
@@ -22,7 +24,7 @@ enum class StateType : uint8_t
 class StateBase
 {
 public:
-    explicit StateBase(uint8_t id) : _id(id) {}
+    explicit StateBase(uint8_t id);
     virtual ~StateBase() = default;
 
     StateBase(const StateBase&) = delete;
@@ -47,12 +49,8 @@ class ButtonState : public StateBase
 public:
     StateType type() const override { return StateType::Digital; }
 
-    void set(bool pressed)
-    {
-        _pressed = pressed;
-        markChanged();
-    }
+    void set(bool pressed);
 
 private:
-bool _pressed = false;
+    bool _pressed = false;
 };

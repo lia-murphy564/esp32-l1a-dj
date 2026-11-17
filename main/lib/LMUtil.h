@@ -6,10 +6,7 @@
 
 namespace LMUtil
 {
-  int add(int a, int b)
-  {
-    return a + b;
-  }
+  int add(int a, int b);
 
   template <typename T>
   constexpr T clamp(T v, T l, T h) {
@@ -21,7 +18,6 @@ namespace LMUtil
     static_assert(std::is_integral_v<T>, "clamp_midi needs an integer type");
     return static_cast<T>(a + (((b - a) * t) >> 8));
   }
-
 
   constexpr float lerpf(float a, float b, float t) {
     return a + t * (b - a);
@@ -49,7 +45,7 @@ namespace LMUtil
     return static_cast<uint8_t>((uint32_t(v) * v * v + 32512) / 65025);  // +half for rounding
   }
 
-    // Returns true once, when the input has held a new state for `ms`.
+  // Returns true once, when the input has held a new state for `ms`.
   struct Debouncer
   {
     uint16_t ms = 20;
@@ -57,14 +53,7 @@ namespace LMUtil
     bool stable = false;
     uint32_t since = 0;
 
-    bool debounce(bool in)
-    {
-      uint32_t now = millis();
-      if (in != raw) { raw = in; since = now; }     // any change restarts the timer
-      if (in == stable || now - since < ms) return false;
-      stable = in;
-      return true;
-    }
+    bool debounce(bool in);
   };
 }
 

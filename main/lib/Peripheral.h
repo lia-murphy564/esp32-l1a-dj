@@ -1,9 +1,9 @@
 #pragma once
 #include <Arduino.h>
-#include "pinout_esp32.h"
-#include "MIDIOut.h"
-#include <algorithm>
 #include <Wire.h>
+#include "pinout_esp32.h"
+#include "pin_handle.h"
+#include "MIDIOut.h"
 #include "Display.h"
 #include "LMUtil.h"
 
@@ -22,20 +22,17 @@ namespace Peripheral
   };
 
 using PeripheralID = const char *;
-  
+
 class PeripheralBase
 {
 public:
   virtual ~PeripheralBase() {}
 
-  explicit PeripheralBase(PeripheralID id = nullptr) : _id(id) {}
+  explicit PeripheralBase(PeripheralID id = nullptr);
 
   virtual void setup() = 0;
   virtual void update() = 0;
-  virtual PeripheralID id() const
-  {
-    return _id;
-  }
+  virtual PeripheralID id() const { return _id; }
 
   virtual void send(MIDIOut &midiOut) {}
 
@@ -46,28 +43,13 @@ private:
 class Button : public PeripheralBase
 {
 public:
-  explicit Button(PeripheralID id, PinAddress pin) : PeripheralBase(id), _pin(pin, PinMode::InputPullup) {}
-  explicit Button(PeripheralID id) : PeripheralBase(id) {}
+  explicit Button(PeripheralID id, PinAddress pin);
+  explicit Button(PeripheralID id);
 
-  void setup() override
-  {
-    _pin.setup();
-  }
+  void setup() override;
+  void update() override;
 
-  void update() override
-  {
-    // TODO: debounce
-
-    if (!_pin.hasPin()) return;
-    updateInternalData(_pin.readDigital());
-  }
-
-  bool changed()
-  {
-    if (_value == _lastSent) return false;
-    _lastSent = _value;
-    return true;
-  }
+  bool changed();
 
   void updateInternalData(auto val)
   {
@@ -76,24 +58,13 @@ public:
     if (true)
       _value = !_debouncer.stable;
     else if (!_debouncer.stable)
-      _value = !_value; 
+      _value = !_value;
   }
 
-  int getValue() const
-  {
-    return _value;
-  }
+  int getValue() const { return _value; }
 
-  void send(MIDIOut &midiOut) override
-  {
-    int midiValue = (_value == LOW) ? 127 : 0;
+  void send(MIDIOut &midiOut) override;
 
-    if (midiValue == _lastSent) return;
-    _lastSent = midiValue;
-
-    midiOut.controlChange(1, 20, midiValue);
-  }
-  
 private:
   PinHandle _pin;
   int _value = LOW;
@@ -104,45 +75,17 @@ private:
 class Potentiometer : public PeripheralBase
 {
 public:
-  explicit Potentiometer(PeripheralID id, PinAddress pin) : PeripheralBase(id), _pin(pin, PinMode::Input) {}
+  explicit Potentiometer(PeripheralID id, PinAddress pin);
 
-  void setup() override
-  {
-    _pin.setup();
-  }
+  void setup() override;
+  void update() override;
 
-  void update() override
-  {
-    // TODO: smoothing
-    _value = _pin.readAnalog();
-  }
+  bool changed();
 
-  bool changed()
-  {
-    if (_value == _lastSent) return false;
-    _lastSent = _value;
-    return true;
-  }
+  int getValue() const { return _value; }
+  float getValueSmoothed() const { return _smoothed; }
 
-  int getValue() const
-  {
-    return _value;
-  }
-
-  float getValueSmoothed() const
-  {
-    return _smoothed;
-  }
-
-  void send(MIDIOut &midiOut) override
-  {
-    int midiValue = std::clamp(_value >> 5, 0, 127);
-
-    if (midiValue == _lastSent) return;
-    _lastSent = midiValue;
-
-    // midiOut.controlChange(1, 21, midiValue);
-  }
+  void send(MIDIOut &midiOut) override;
 
 private:
   PinHandle _pin;
@@ -154,58 +97,15 @@ private:
 class RotaryEncoder : public PeripheralBase
 {
 public:
-  explicit RotaryEncoder(PeripheralID id, PinAddress pin_a, PinAddress pin_b, PinAddress pin_sw)
-    : PeripheralBase(id),
-      pin_a_(pin_a, PinMode::Input),
-      pin_b_(pin_b, PinMode::Input),
-      _button(id, pin_sw) {}
+  explicit RotaryEncoder(PeripheralID id, PinAddress pin_a, PinAddress pin_b, PinAddress pin_sw);
 
-      void setup() override
-      {
-        pin_a_.setup();
-        pin_b_.setup();
-        _button.setup();
+  void setup() override;
+  void update() override;
 
-        lastStateClock = pin_a_.readDigital();
-      }
+  int getValueButton() const { return _button.getValue(); }
+  int getValuePosition() const { return counter; }
 
-      void update() override
-      {
-        // pin_a_.update();
-        // pin_b_.update();
-        _button.update();
-
-        currentStateClock = pin_a_.readDigital();
-
-        if (currentStateClock != lastStateClock && currentStateClock == LOW)
-        {
-          if (pin_b_.readDigital() != currentStateClock)
-          {
-            counter++;
-          }
-          else
-          {
-            counter--;
-          }
-        }
-
-        lastStateClock = currentStateClock;
-      }
-
-      int getValueButton() const
-      {
-        return _button.getValue();
-      }
-
-      int getValuePosition() const
-      {
-        return counter;
-      }
-
-      void send(MIDIOut &midiOut) override
-      {
-        return;
-      }
+  void send(MIDIOut &midiOut) override;
 
 private:
   PinHandle pin_a_;
@@ -221,60 +121,15 @@ private:
 class Oled_SSD1306 : public PeripheralBase
 {
 public:
-  explicit Oled_SSD1306(PeripheralID id, TwoWire &bus = Wire, uint8_t address = 0x3C)
-    : PeripheralBase(id),
-      _bus(bus),
-      _address(address),
-      _display(_width, _height, &_bus, _resetPin) {}
+  explicit Oled_SSD1306(PeripheralID id, TwoWire &bus = Wire, uint8_t address = 0x3C);
 
-  void setup() override
-  {
-    _display.begin(SSD1306_SWITCHCAPVCC, _address);
-    _display.clearDisplay();
-    _display.setTextColor(SSD1306_WHITE);
+  void setup() override;
+  void update() override;
 
-    _display.setTextSize(1);
-    _display.setCursor(0, 0);
-    _display.println("L1A - DEBUG");
-
-    _display.setTextSize(2);
-    _display.setCursor(0, 12);
-    _display.println("CC NaN");
-
-    _display.display();
-  }
-
-  void update() override
-  {
-    if (!_stale)
-      return;
-
-    updateDisplay();
-    _stale = false;
-  }
-
-  void setDisplay(DisplayData &data)
-  {
-    _data = &data;
-    _stale = true;
-    
-    // if (val.get() == _data.get())
-    //   return;
-    // _data = val;
-    // _stale = true;
-  }
+  void setDisplay(DisplayData &data);
 
 private:
-  void updateDisplay()
-  {
-    _display.clearDisplay();
-
-    if (_data)
-      _data->draw(_display);
-
-    _display.display();
-
-  }
+  void updateDisplay();
 
   TwoWire &_bus;
   uint8_t _address;
@@ -291,85 +146,18 @@ private:
 class LED : public PeripheralBase
 {
 public:
-  explicit LED(PeripheralID id, PinAddress pin)
-    : PeripheralBase(id),
-      _pin(pin, PinMode::Output) {
-        _isPWM = false;
-      }
+  explicit LED(PeripheralID id, PinAddress pin);
+  explicit LED(PeripheralID id, PinAddress pin, bool usePWM);
 
-  explicit LED(PeripheralID id, PinAddress pin, bool usePWM)
-    : PeripheralBase(id),
-      _pin(pin, usePWM ? PinMode::Default : PinMode::Output) {
-        if (_pin.getMode() == PinMode::Default)
-          _isPWM = true;
-      }
+  void setup() override;
+  void update() override;
 
-    void setup() override
-    {
-      _pin.setup();
-    }
+  void set(uint8_t state);
+  void toggle();
+  void setBlink(uint16_t period);
+  void pwm(uint8_t value);
 
-    void update() override
-    {
-      if (isBlinking)
-      {
-        if (millis() - _lastBlinkTime >= _blinkPeriod)
-        {
-          if (_isPWM)
-          {
-            _pwmValue += _fadeDirection;
-            if (_pwmValue == 0 || _pwmValue >= 255)
-              _fadeDirection = -_fadeDirection;
-          }
-          else
-          {
-            _state = !_state;
-            if (_state > 1)
-              _state = 1;
-          }
-
-          _lastBlinkTime = millis();
-        }
-      }
-
-      if (_isPWM)
-        _pin.writePWM(_state ? LMUtil::gamma8(_pwmValue) : 0);
-      else
-        _pin.writeDigital(_state);
-    }
-
-    void set(uint8_t state)
-    {
-      _state = state;
-      update();
-    }
-
-    void toggle()
-    {
-      _state = !_state;
-    }
-
-    void setBlink(uint16_t period)
-    {
-      _blinkPeriod = period;
-
-      if (_blinkPeriod == 0)
-      {
-        isBlinking = false;
-        return;
-      }
-
-      isBlinking = true;
-      _lastBlinkTime = millis();
-    }
-
-    void pwm(uint8_t value)
-    {
-      _pwmValue = value;
-      update();
-    }
-
-private: 
+private:
   PinHandle _pin;
 
   bool isBlinking = false;
@@ -386,4 +174,3 @@ private:
 };
 
 } // namespace Peripheral
-
