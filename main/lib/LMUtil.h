@@ -6,7 +6,7 @@
 
 namespace LMUtil
 {
-  int add(int a, int b)
+  constexpr int add(int a, int b)
   {
     return a + b;
   }
