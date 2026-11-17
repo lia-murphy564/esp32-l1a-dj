@@ -12,43 +12,43 @@ namespace Peripheral
     public:
         Multiplexor(PeripheralID id, PinAddress s0, PinAddress s1, PinAddress s2, PinAddress s3, PinAddress sig)
             : PeripheralBase(id),
-              s0_(s0, PinMode::Output),
-              s1_(s1, PinMode::Output),
-              s2_(s2, PinMode::Output),
-              s3_(s3, PinMode::Output),
-              sig_(sig, PinMode::InputPullup)
+              _s0(s0, PinMode::Output),
+              _s1(s1, PinMode::Output),
+              _s2(s2, PinMode::Output),
+              _s3(s3, PinMode::Output),
+              _sig(sig, PinMode::InputPullup)
         {}
 
         void setup()
         {
-            s0_.setup();
-            s1_.setup();
-            s2_.setup();
-            s3_.setup();
-            sig_.setup();
+            _s0.setup();
+            _s1.setup();
+            _s2.setup();
+            _s3.setup();
+            _sig.setup();
         }
 
         void update() override
         {
             for (uint8_t ch = 0; ch < 16; ch++)
             {
-                if (buttons_[ch] == nullptr) continue;
-                buttons_[ch]->updateInternalData(readChannel(ch));
+                if (_buttons[ch] == nullptr) continue;
+                _buttons[ch]->updateInternalData(readChannel(ch));
             }
-            // state_ = readAll();
+            // _state = readAll();
         }
 
         void attach(Button &button, uint8_t ch)
         {
             if (ch > 0x0F) return;
-            buttons_[ch] = &button;
+            _buttons[ch] = &button;
         }
 
         uint8_t readChannel(uint8_t ch)
         {
             setChannel(ch);
             delayMicroseconds(5); // sig delay
-            return sig_.readDigital();
+            return _sig.readDigital();
         }
 
         uint16_t readAll()
@@ -66,25 +66,25 @@ namespace Peripheral
         void setChannel(uint8_t ch)
         {
             ch &= 0x0F;
-            if (ch == currentCh_) return;
+            if (ch == _currentCh) return;
 
-            s0_.writeDigital(ch & 0x01);
-            s1_.writeDigital((ch >> 1) & 0x01);
-            s2_.writeDigital((ch >> 2) & 0x01);
-            s3_.writeDigital((ch >> 3) & 0x01);
+            _s0.writeDigital(ch & 0x01);
+            _s1.writeDigital((ch >> 1) & 0x01);
+            _s2.writeDigital((ch >> 2) & 0x01);
+            _s3.writeDigital((ch >> 3) & 0x01);
 
-            currentCh_ = ch;
+            _currentCh = ch;
         }
 
-        PinHandle s0_;
-        PinHandle s1_;
-        PinHandle s2_;
-        PinHandle s3_;
-        PinHandle sig_;
-        uint8_t currentCh_ = 0xFF; // invalid byte
+        PinHandle _s0;
+        PinHandle _s1;
+        PinHandle _s2;
+        PinHandle _s3;
+        PinHandle _sig;
+        uint8_t _currentCh = 0xFF; // invalid byte
 
-        uint16_t state_ = 0;
+        uint16_t _state = 0;
 
-        Button* buttons_[16] = {};
+        Button* _buttons[16] = {};
     };
 }

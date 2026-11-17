@@ -86,15 +86,15 @@ public:
 
   void setOutput(MIDIOut &midiOut)
   {
-    midiOut_ = &midiOut;
+    _midiOut = &midiOut;
   }
 
   void sendMidi()
   {
-    if (!midiOut_) return;
+    if (!_midiOut) return;
     forEach([this](Peripheral::PeripheralBase &c)
     {
-      c.send(*midiOut_);
+      c.send(*_midiOut);
     });
   }
 
@@ -109,7 +109,7 @@ public:
   }
 
 private:
-  MIDIOut *midiOut_ = nullptr;
+  MIDIOut *_midiOut = nullptr;
 };
 
 

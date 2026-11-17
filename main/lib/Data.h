@@ -22,7 +22,7 @@ enum class StateType : uint8_t
 class StateBase
 {
 public:
-    explicit StateBase(uint8_t id) : id_(id) {}
+    explicit StateBase(uint8_t id) : _id(id) {}
     virtual ~StateBase() = default;
 
     StateBase(const StateBase&) = delete;
@@ -30,16 +30,16 @@ public:
 
     virtual StateType type() const = 0;
 
-    uint8_t id() const { return id_; }
-    bool changed() const { return changed_; }
-    void clearChanged() { changed_ = false; }
+    uint8_t id() const { return _id; }
+    bool changed() const { return _changed; }
+    void clearChanged() { _changed = false; }
 
 protected:
-    void markChanged() { changed_ = true; }
+    void markChanged() { _changed = true; }
 
 private:
-    uint8_t id_;
-    bool changed_ = false;
+    uint8_t _id;
+    bool _changed = false;
 };
 
 class ButtonState : public StateBase
@@ -49,10 +49,10 @@ public:
 
     void set(bool pressed)
     {
-        pressed_ = pressed;
+        _pressed = pressed;
         markChanged();
     }
 
 private:
-bool pressed_ = false;
+bool _pressed = false;
 };
