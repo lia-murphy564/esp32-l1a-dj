@@ -18,7 +18,7 @@ extern "C" void app_main(void)
 
     int count = 0;
     while (1) {
-        ESP_LOGI(TAG, "Loop count A: %d", count++);
+        ESP_LOGI(TAG, "Loop count ZED: %d", count++);
         vTaskDelay(pdMS_TO_TICKS(1000));   // wait 1 second
     }
 }
