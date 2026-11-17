@@ -4,6 +4,7 @@
 #include "esp_log.h"
 #include "driver/uart.h"
 #include <Arduino.h>
+#include "lib/LMUtil.h"
 
 static const char *TAG = "main";
 
