@@ -28,127 +28,127 @@ class PeripheralBase
 public:
   virtual ~PeripheralBase() {}
 
-  explicit PeripheralBase(PeripheralID id = nullptr) : id_(id) {}
+  explicit PeripheralBase(PeripheralID id = nullptr) : _id(id) {}
 
   virtual void setup() = 0;
   virtual void update() = 0;
   virtual PeripheralID id() const
   {
-    return id_;
+    return _id;
   }
 
   virtual void send(MIDIOut &midiOut) {}
 
 private:
-  PeripheralID id_;
+  PeripheralID _id;
 };
 
 class Button : public PeripheralBase
 {
 public:
-  explicit Button(PeripheralID id, PinAddress pin) : PeripheralBase(id), pin_(pin, PinMode::InputPullup) {}
+  explicit Button(PeripheralID id, PinAddress pin) : PeripheralBase(id), _pin(pin, PinMode::InputPullup) {}
   explicit Button(PeripheralID id) : PeripheralBase(id) {}
 
   void setup() override
   {
-    pin_.setup();
+    _pin.setup();
   }
 
   void update() override
   {
     // TODO: debounce
 
-    if (!pin_.hasPin()) return;
-    updateInternalData(pin_.readDigital());
+    if (!_pin.hasPin()) return;
+    updateInternalData(_pin.readDigital());
   }
 
   bool changed()
   {
-    if (value_ == lastSent_) return false;
-    lastSent_ = value_;
+    if (_value == _lastSent) return false;
+    _lastSent = _value;
     return true;
   }
 
   void updateInternalData(auto val)
   {
-    if (!debouncer_.debounce(val == LOW)) return;
+    if (!_debouncer.debounce(val == LOW)) return;
 
     if (true)
-      value_ = !debouncer_.stable;
-    else if (!debouncer_.stable)
-      value_ = !value_; 
+      _value = !_debouncer.stable;
+    else if (!_debouncer.stable)
+      _value = !_value; 
   }
 
   int getValue() const
   {
-    return value_;
+    return _value;
   }
 
   void send(MIDIOut &midiOut) override
   {
-    int midiValue = (value_ == LOW) ? 127 : 0;
+    int midiValue = (_value == LOW) ? 127 : 0;
 
-    if (midiValue == lastSent_) return;
-    lastSent_ = midiValue;
+    if (midiValue == _lastSent) return;
+    _lastSent = midiValue;
 
     midiOut.controlChange(1, 20, midiValue);
   }
   
 private:
-  PinHandle pin_;
-  int value_ = LOW;
-  int lastSent_ = -1;
-  LMUtil::Debouncer debouncer_;
+  PinHandle _pin;
+  int _value = LOW;
+  int _lastSent = -1;
+  LMUtil::Debouncer _debouncer;
 };
 
 class Potentiometer : public PeripheralBase
 {
 public:
-  explicit Potentiometer(PeripheralID id, PinAddress pin) : PeripheralBase(id), pin_(pin, PinMode::Input) {}
+  explicit Potentiometer(PeripheralID id, PinAddress pin) : PeripheralBase(id), _pin(pin, PinMode::Input) {}
 
   void setup() override
   {
-    pin_.setup();
+    _pin.setup();
   }
 
   void update() override
   {
     // TODO: smoothing
-    value_ = pin_.readAnalog();
+    _value = _pin.readAnalog();
   }
 
   bool changed()
   {
-    if (value_ == lastSent_) return false;
-    lastSent_ = value_;
+    if (_value == _lastSent) return false;
+    _lastSent = _value;
     return true;
   }
 
   int getValue() const
   {
-    return value_;
+    return _value;
   }
 
   float getValueSmoothed() const
   {
-    return smoothed_;
+    return _smoothed;
   }
 
   void send(MIDIOut &midiOut) override
   {
-    int midiValue = std::clamp(value_ >> 5, 0, 127);
+    int midiValue = std::clamp(_value >> 5, 0, 127);
 
-    if (midiValue == lastSent_) return;
-    lastSent_ = midiValue;
+    if (midiValue == _lastSent) return;
+    _lastSent = midiValue;
 
     // midiOut.controlChange(1, 21, midiValue);
   }
 
 private:
-  PinHandle pin_;
-  int value_ = 0;
-  float smoothed_ = 0.0f;
-  int lastSent_ = -1;
+  PinHandle _pin;
+  int _value = 0;
+  float _smoothed = 0.0f;
+  int _lastSent = -1;
 };
 
 class RotaryEncoder : public PeripheralBase
@@ -158,13 +158,13 @@ public:
     : PeripheralBase(id),
       pin_a_(pin_a, PinMode::Input),
       pin_b_(pin_b, PinMode::Input),
-      button_(id, pin_sw) {}
+      _button(id, pin_sw) {}
 
       void setup() override
       {
         pin_a_.setup();
         pin_b_.setup();
-        button_.setup();
+        _button.setup();
 
         lastStateClock = pin_a_.readDigital();
       }
@@ -173,7 +173,7 @@ public:
       {
         // pin_a_.update();
         // pin_b_.update();
-        button_.update();
+        _button.update();
 
         currentStateClock = pin_a_.readDigital();
 
@@ -194,7 +194,7 @@ public:
 
       int getValueButton() const
       {
-        return button_.getValue();
+        return _button.getValue();
       }
 
       int getValuePosition() const
@@ -210,7 +210,7 @@ public:
 private:
   PinHandle pin_a_;
   PinHandle pin_b_;
-  Button button_;
+  Button _button;
 
   int counter;
   int currentStateClock;
@@ -223,69 +223,69 @@ class Oled_SSD1306 : public PeripheralBase
 public:
   explicit Oled_SSD1306(PeripheralID id, TwoWire &bus = Wire, uint8_t address = 0x3C)
     : PeripheralBase(id),
-      bus_(bus),
-      address_(address),
-      display_(width_, height_, &bus_, resetPin_) {}
+      _bus(bus),
+      _address(address),
+      _display(_width, _height, &_bus, _resetPin) {}
 
   void setup() override
   {
-    display_.begin(SSD1306_SWITCHCAPVCC, address_);
-    display_.clearDisplay();
-    display_.setTextColor(SSD1306_WHITE);
+    _display.begin(SSD1306_SWITCHCAPVCC, _address);
+    _display.clearDisplay();
+    _display.setTextColor(SSD1306_WHITE);
 
-    display_.setTextSize(1);
-    display_.setCursor(0, 0);
-    display_.println("L1A - DEBUG");
+    _display.setTextSize(1);
+    _display.setCursor(0, 0);
+    _display.println("L1A - DEBUG");
 
-    display_.setTextSize(2);
-    display_.setCursor(0, 12);
-    display_.println("CC NaN");
+    _display.setTextSize(2);
+    _display.setCursor(0, 12);
+    _display.println("CC NaN");
 
-    display_.display();
+    _display.display();
   }
 
   void update() override
   {
-    if (!stale_)
+    if (!_stale)
       return;
 
     updateDisplay();
-    stale_ = false;
+    _stale = false;
   }
 
   void setDisplay(DisplayData &data)
   {
-    data_ = &data;
-    stale_ = true;
+    _data = &data;
+    _stale = true;
     
-    // if (val.get() == data_.get())
+    // if (val.get() == _data.get())
     //   return;
-    // data_ = val;
-    // stale_ = true;
+    // _data = val;
+    // _stale = true;
   }
 
 private:
   void updateDisplay()
   {
-    display_.clearDisplay();
+    _display.clearDisplay();
 
-    if (data_)
-      data_->draw(display_);
+    if (_data)
+      _data->draw(_display);
 
-    display_.display();
+    _display.display();
 
   }
 
-  TwoWire &bus_;
-  uint8_t address_;
-  Adafruit_SSD1306 display_;
+  TwoWire &_bus;
+  uint8_t _address;
+  Adafruit_SSD1306 _display;
 
-  static constexpr uint8_t width_ = 128;
-  static constexpr uint8_t height_ = 32;
-  static constexpr int8_t resetPin_ = -1;
+  static constexpr uint8_t _width = 128;
+  static constexpr uint8_t _height = 32;
+  static constexpr int8_t _resetPin = -1;
 
-  DisplayData *data_ = nullptr;
-  bool stale_ = false;
+  DisplayData *_data = nullptr;
+  bool _stale = false;
 };
 
 class LED : public PeripheralBase
@@ -293,96 +293,96 @@ class LED : public PeripheralBase
 public:
   explicit LED(PeripheralID id, PinAddress pin)
     : PeripheralBase(id),
-      pin_(pin, PinMode::Output) {
-        isPWM_ = false;
+      _pin(pin, PinMode::Output) {
+        _isPWM = false;
       }
 
   explicit LED(PeripheralID id, PinAddress pin, bool usePWM)
     : PeripheralBase(id),
-      pin_(pin, usePWM ? PinMode::Default : PinMode::Output) {
-        if (pin_.getMode() == PinMode::Default)
-          isPWM_ = true;
+      _pin(pin, usePWM ? PinMode::Default : PinMode::Output) {
+        if (_pin.getMode() == PinMode::Default)
+          _isPWM = true;
       }
 
     void setup() override
     {
-      pin_.setup();
+      _pin.setup();
     }
 
     void update() override
     {
       if (isBlinking)
       {
-        if (millis() - lastBlinkTime_ >= blinkPeriod_)
+        if (millis() - _lastBlinkTime >= _blinkPeriod)
         {
-          if (isPWM_)
+          if (_isPWM)
           {
-            pwmValue_ += fadeDirection_;
-            if (pwmValue_ == 0 || pwmValue_ >= 255)
-              fadeDirection_ = -fadeDirection_;
+            _pwmValue += _fadeDirection;
+            if (_pwmValue == 0 || _pwmValue >= 255)
+              _fadeDirection = -_fadeDirection;
           }
           else
           {
-            state_ = !state_;
-            if (state_ > 1)
-              state_ = 1;
+            _state = !_state;
+            if (_state > 1)
+              _state = 1;
           }
 
-          lastBlinkTime_ = millis();
+          _lastBlinkTime = millis();
         }
       }
 
-      if (isPWM_)
-        pin_.writePWM(state_ ? LMUtil::gamma8(pwmValue_) : 0);
+      if (_isPWM)
+        _pin.writePWM(_state ? LMUtil::gamma8(_pwmValue) : 0);
       else
-        pin_.writeDigital(state_);
+        _pin.writeDigital(_state);
     }
 
     void set(uint8_t state)
     {
-      state_ = state;
+      _state = state;
       update();
     }
 
     void toggle()
     {
-      state_ = !state_;
+      _state = !_state;
     }
 
     void setBlink(uint16_t period)
     {
-      blinkPeriod_ = period;
+      _blinkPeriod = period;
 
-      if (blinkPeriod_ == 0)
+      if (_blinkPeriod == 0)
       {
         isBlinking = false;
         return;
       }
 
       isBlinking = true;
-      lastBlinkTime_ = millis();
+      _lastBlinkTime = millis();
     }
 
     void pwm(uint8_t value)
     {
-      pwmValue_ = value;
+      _pwmValue = value;
       update();
     }
 
 private: 
-  PinHandle pin_;
+  PinHandle _pin;
 
   bool isBlinking = false;
 
   // Digital
-  uint8_t state_ = 0;
-  uint16_t blinkPeriod_ = 0;
-  uint32_t lastBlinkTime_ = 0;
+  uint8_t _state = 0;
+  uint16_t _blinkPeriod = 0;
+  uint32_t _lastBlinkTime = 0;
 
   // PWM
-  bool isPWM_ = false;
-  uint8_t pwmValue_ = 0; // 0 - 255
-  int8_t fadeDirection_ = 1; // 1 = up, -1 = down
+  bool _isPWM = false;
+  uint8_t _pwmValue = 0; // 0 - 255
+  int8_t _fadeDirection = 1; // 1 = up, -1 = down
 };
 
 } // namespace Peripheral

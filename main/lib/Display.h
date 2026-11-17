@@ -10,28 +10,28 @@ public:
   virtual ~DisplayData() {};
   virtual void draw(Adafruit_GFX &gfx) 
   {
-    if (bmp_)
-        gfx.drawBitmap(0, 0, bmp_, gfx.width(), gfx.height(), 1);
+    if (_bmp)
+        gfx.drawBitmap(0, 0, _bmp, gfx.width(), gfx.height(), 1);
   };
 
-  void setBitmap(const uint8_t *bmp) { bmp_ = bmp; }
+  void setBitmap(const uint8_t *bmp) { _bmp = bmp; }
 
   // TODO: Remove and write a better version
   void setLine(uint8_t i, const char *text, uint8_t size = 1)
   {
     if (i >= 4) return;
-    strncpy(lines_[i], text, 22 - 1);
-    lines_[i][22 - 1] = '\0';
-    sizes_[i] = size;
+    strncpy(_lines[i], text, 22 - 1);
+    _lines[i][22 - 1] = '\0';
+    _sizes[i] = size;
   }
 
 protected:
-  char    lines_[4][22] = {};
-  uint8_t sizes_[22] = {1, 1, 1, 1};
+  char    _lines[4][22] = {};
+  uint8_t _sizes[22] = {1, 1, 1, 1};
 
 
 private:
-  const uint8_t *bmp_ = nullptr;
+  const uint8_t *_bmp = nullptr;
 };
 
 class DisplayDebug : public DisplayData
@@ -44,11 +44,11 @@ public:
     gfx.setTextColor(1);
     int16_t y = 0;
     for (uint8_t i = 0; i < 4; i++) {
-      if (lines_[i][0] == '\0') continue;
-      gfx.setTextSize(sizes_[i]);
+      if (_lines[i][0] == '\0') continue;
+      gfx.setTextSize(_sizes[i]);
       gfx.setCursor(0, y);
-      gfx.print(lines_[i]);
-      y += 8 * sizes_[i];
+      gfx.print(_lines[i]);
+      y += 8 * _sizes[i];
     }
   }
 
@@ -75,13 +75,13 @@ public:
 // class BitmapDisplay : public DisplayData
 // {
 // public:
-//   explicit BitmapDisplay(const uint8_t *bmp) : bmp_(bmp) {}
+//   explicit BitmapDisplay(const uint8_t *bmp) : _bmp(bmp) {}
 
-// //   void setBitmap(const uint8_t *bmp) { bmp_ = bmp; }
+// //   void setBitmap(const uint8_t *bmp) { _bmp = bmp; }
 
 //   void draw(Adafruit_GFX &gfx) override
 //   {
-//     gfx.drawBitmap(0, 0, bmp_, gfx.width(), gfx.height(), 1);
+//     gfx.drawBitmap(0, 0, _bmp, gfx.width(), gfx.height(), 1);
 //   }
 
 // };
