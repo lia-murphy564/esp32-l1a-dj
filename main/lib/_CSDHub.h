@@ -16,9 +16,11 @@ namespace CSD
 
         MIDIOut midiOut;
 
-        Peripheral::LED myledblue{"ledblue", PinAddress::GPIO_25};
-        Peripheral::LED myledwhite{"ledwhite", PinAddress::GPIO_26};
-        Peripheral::LED myledgreen{"ledgreen", PinAddress::GPIO_27, true};
+        // Peripheral::LED myledblue{"ledblue", PinAddress::GPIO_25};
+        // Peripheral::LED myledwhite{"ledwhite", PinAddress::GPIO_26};
+        // Peripheral::LED myledgreen{"ledgreen", PinAddress::GPIO_27, true};
+
+        Peripheral::RotaryEncoder myEncoder{"encoder", PinAddress::GPIO_25, PinAddress::GPIO_26, PinAddress::GPIO_27};
 
         Peripheral::Oled_SSD1306 myDisplay{"oled"};
         DisplayDebug *displayDebug = new DisplayDebug;

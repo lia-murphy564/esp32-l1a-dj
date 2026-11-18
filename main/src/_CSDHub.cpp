@@ -14,6 +14,8 @@ void CSDHub::setup()
     myDisplay.setDisplay(*displayDebug);
     myDisplay.setup();
 
+    myEncoder.setup();
+
     comLinkHub.begin();
 }
 
@@ -49,9 +51,25 @@ void CSDHub::update()
     
     myDisplay.update();
 
-    myledblue.update();
-    myledwhite.update();
-    myledgreen.update();
+    myEncoder.update();
+    // myEncoder.send(midiOut);
+
+    static int lastEncBtn = -1;
+    int encBtn = myEncoder.getValueButton();
+
+    if (myEncoder.changed() || encBtn != lastEncBtn)
+    {
+        printf("ENC pos:%d delta:%+d dir:%s SW:%d\n",
+               myEncoder.getValuePosition(),
+               myEncoder.getDelta(),
+               myEncoder.getDelta() > 0 ? "CW" : myEncoder.getDelta() < 0 ? "CCW" : "--",
+               encBtn);
+        lastEncBtn = encBtn;
+    }
+
+    // myledblue.update();
+    // myledwhite.update();
+    // myledgreen.update();
 }
 
 }

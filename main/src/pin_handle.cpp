@@ -46,3 +46,13 @@ void PinHandle::writePWM(uint8_t value)
     return;
   analogWrite(rawPin(), value);
 }
+
+void PinHandle::attachISR(isrfn fn, void *arg, int mode)
+{
+  attachInterruptArg(digitalPinToInterrupt(rawPin()), fn, arg, mode);
+}
+
+int IRAM_ATTR PinHandle::readDigitalISR() const
+{
+  return gpio_get_level(static_cast<gpio_num_t>(rawPin()));
+}

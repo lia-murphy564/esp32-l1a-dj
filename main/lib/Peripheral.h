@@ -6,6 +6,7 @@
 #include "MIDIOut.h"
 #include "Display.h"
 #include "LMUtil.h"
+#include "esp_timer.h"
 
 namespace Peripheral
 {
@@ -104,27 +105,52 @@ private:
   static constexpr int kRawMax = 4070;
 };
 
+static const int8_t DRAM_ATTR kEncStates[16] =
+    {0, -1, 1, 0, 1, 0, 0, -1, -1, 0, 0, 1, 0, 1, -1, 0};
+
 class RotaryEncoder : public PeripheralBase
 {
 public:
-  explicit RotaryEncoder(PeripheralID id, PinAddress pin_a, PinAddress pin_b, PinAddress pin_sw);
+  explicit RotaryEncoder(PeripheralID id, PinAddress enc_a, PinAddress enc_b, PinAddress enc_sw);
 
   void setup() override;
   void update() override;
 
-  int getValueButton() const { return _button.getValue(); }
-  int getValuePosition() const { return counter; }
+  int getValueButton() const { return _enc_sw.getValue(); }
+  int getValuePosition() const { return _position; }
 
   void send(MIDIOut &midiOut) override;
 
-private:
-  PinHandle pin_a_;
-  PinHandle pin_b_;
-  Button _button;
+  bool changed() const { return _delta != 0; }
+  int  getDelta() const { return _delta; }
 
-  int counter;
-  int currentStateClock;
-  int lastStateClock;
+private:
+  static void onEdge(void *self);
+  void readEncoder();
+
+  PinHandle _enc_a;
+  PinHandle _enc_b;
+  Button _enc_sw;
+
+  // For non-interrupt
+  // int counter;
+  // int currentStateClock;
+  // int lastStateClock;
+
+  // Decoder state (touched in ISR)
+  uint8_t _oldAB  = 3;
+  int8_t  _encval = 0;
+  int64_t _lastIncUs = 0;
+  int64_t _lastDecUs = 0;
+  volatile int32_t _pending = 0;
+  portMUX_TYPE _lock = portMUX_INITIALIZER_UNLOCKED;
+
+  // Main-loop values
+  int32_t _position = 0;
+  int32_t _delta = 0;
+
+  static constexpr int64_t kPauseLengthUs = 25000;
+  static constexpr int32_t kFastIncrement = 10;
 };
 
 //Todo: U8g2 font

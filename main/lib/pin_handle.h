@@ -1,6 +1,7 @@
 #pragma once
 #include <Arduino.h>
 #include "pinout_esp32.h"
+#include "driver/gpio.h"
 
 enum class PinMode : uint8_t
 {
@@ -10,6 +11,8 @@ enum class PinMode : uint8_t
   InputPulldown = INPUT_PULLDOWN,
   Default       = 0xFF, // PWM output
 };
+
+using isrfn = void (*)(void *);
 
 class PinHandle
 {
@@ -30,6 +33,8 @@ class PinHandle
     int  readAnalog() const;
     void writeDigital(bool value);
     void writePWM(uint8_t value);
+    void attachISR(isrfn fn, void *arg, int mode = CHANGE);
+    int readDigitalISR() const;
 
   private:
     uint8_t rawPin() const { return static_cast<uint8_t>(_pin); }

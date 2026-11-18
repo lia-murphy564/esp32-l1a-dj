@@ -86,47 +86,106 @@ void Potentiometer::send(MIDIOut &midiOut)
   // midiOut.controlChange(1, 21, midiValue);
 }
 
-RotaryEncoder::RotaryEncoder(PeripheralID id, PinAddress pin_a, PinAddress pin_b, PinAddress pin_sw)
+RotaryEncoder::RotaryEncoder(PeripheralID id, PinAddress enc_a, PinAddress enc_b, PinAddress enc_sw)
   : PeripheralBase(id),
-    pin_a_(pin_a, PinMode::Input),
-    pin_b_(pin_b, PinMode::Input),
-    _button(id, pin_sw) {}
+    _enc_a(enc_a, PinMode::Input),
+    _enc_b(enc_b, PinMode::Input),
+    _enc_sw(id, enc_sw) {}
 
 void RotaryEncoder::setup()
 {
-  pin_a_.setup();
-  pin_b_.setup();
-  _button.setup();
+  _enc_a.setup();
+  _enc_b.setup();
+  _enc_sw.setup();
 
-  lastStateClock = pin_a_.readDigital();
+  _oldAB  = (_enc_a.readDigital() << 1) | _enc_b.readDigital();
+
+  _enc_a.attachISR(&RotaryEncoder::onEdge, this);
+  _enc_b.attachISR(&RotaryEncoder::onEdge, this);
 }
 
 void RotaryEncoder::update()
 {
-  // pin_a_.update();
-  // pin_b_.update();
-  _button.update();
+  _enc_sw.update();
 
-  currentStateClock = pin_a_.readDigital();
+  portENTER_CRITICAL(&_lock);
+  int32_t d = _pending;
+  _pending = 0;
+  portEXIT_CRITICAL(&_lock);
 
-  if (currentStateClock != lastStateClock && currentStateClock == LOW)
-  {
-    if (pin_b_.readDigital() != currentStateClock)
-    {
-      counter++;
-    }
-    else
-    {
-      counter--;
-    }
-  }
-
-  lastStateClock = currentStateClock;
+  _delta = d;
+  _position += d;
 }
+
+// For non-interrupt
+// void RotaryEncoder::update()
+// {
+//   // pin_a_.update();
+//   // pin_b_.update();
+//   _enc_sw.update();
+
+//   currentStateClock = _enc_a.readDigital();
+
+//   if (currentStateClock != lastStateClock && currentStateClock == LOW)
+//   {
+//     if (_enc_b.readDigital() != currentStateClock)
+//     {
+//       counter++;
+//     }
+//     else
+//     {
+//       counter--;
+//     }
+//   }
+
+//   lastStateClock = currentStateClock;
+// }
 
 void RotaryEncoder::send(MIDIOut &midiOut)
 {
-  return;
+   if (_delta != 0)
+  {
+    // Relative CC: 64 = no change, 65+ = clockwise, 63- = counter-clockwise.
+    uint8_t value = constrain(64 + _delta, 0, 127);
+
+    // TODO: send `value` the same way Button::send does
+    (void)value;
+  }
+
+  _enc_sw.send(midiOut);
+}
+
+void RotaryEncoder::onEdge(void *self)
+{
+  static_cast<RotaryEncoder *>(self)->readEncoder();
+}
+
+void IRAM_ATTR RotaryEncoder::readEncoder()
+{
+  portENTER_CRITICAL_ISR(&_lock);
+
+  _oldAB <<= 2;
+  if (_enc_a.readDigitalISR()) _oldAB |= 0x02;
+  if (_enc_b.readDigitalISR()) _oldAB |= 0x01;
+
+  _encval += kEncStates[_oldAB & 0x0f];
+
+  if (_encval > 3)
+  {
+    int64_t now = esp_timer_get_time();
+    _pending += (now - _lastIncUs < kPauseLengthUs) ? kFastIncrement : 1;
+    _lastIncUs = now;
+    _encval = 0;
+  }
+  else if (_encval < -3)
+  {
+    int64_t now = esp_timer_get_time();
+    _pending -= (now - _lastDecUs < kPauseLengthUs) ? kFastIncrement : 1;
+    _lastDecUs = now;
+    _encval = 0;
+  }
+
+  portEXIT_CRITICAL_ISR(&_lock);
 }
 
 Oled_SSD1306::Oled_SSD1306(PeripheralID id, TwoWire &bus, uint8_t address)
