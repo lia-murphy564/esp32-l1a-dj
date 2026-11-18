@@ -27,13 +27,4 @@ namespace CSD
         static constexpr uint8_t MSG_CONTROL = 1;   // the "type" field
 
     };
-
-    class CSDModule : public CSDDevice
-    {
-    public:
-        CSDModule();
-        ~CSDModule();
-        void setup();
-        void update();
-    };
 }

@@ -1,4 +1,4 @@
-#include "Peripheral.h"
+ #include "Peripheral.h"
 #include <algorithm>
 
 namespace Peripheral
@@ -54,14 +54,26 @@ void Potentiometer::setup()
 void Potentiometer::update()
 {
   // TODO: smoothing
-  _value = _pin.readAnalog();
+  // _value = _pin.readAnalog();
+
+  uint32_t sum = 0;
+  for (int i = 0; i < kOversample; i++) sum += _pin.readAnalog();
+  _value = static_cast<int>(sum / kOversample);
+
+  if (!_primed) { _smoothed = _value; _primed = true; }
+  else          { _smoothed += kAlpha * (_value - _smoothed); }
+
+  float pos = (_smoothed - kRawMin) * 127.0f / (kRawMax - kRawMin);
+  pos = std::clamp(pos, 0.0f, 127.0f);
+
+  if (_lastSent < 0 || std::fabs(pos - _midiValue) > kHysteresis) {
+    _midiValue = static_cast<int>(pos + 0.5f);
+  }
 }
 
 bool Potentiometer::changed()
 {
-  if (_value == _lastSent) return false;
-  _lastSent = _value;
-  return true;
+  return _midiValue != _lastSent;
 }
 
 void Potentiometer::send(MIDIOut &midiOut)

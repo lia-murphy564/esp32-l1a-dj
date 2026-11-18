@@ -54,24 +54,4 @@ void CSDHub::update()
     myledgreen.update();
 }
 
-
-
-
-// MODULE
-CSDModule::CSDModule()
-{}
-
-CSDModule::~CSDModule()
-{}
-
-void CSDModule::setup()
-{
-
-}
-
-void CSDModule::update()
-{
-    
-}
-
 }

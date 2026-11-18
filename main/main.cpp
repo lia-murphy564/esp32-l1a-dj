@@ -186,8 +186,10 @@ extern "C" void app_main(void)
             ledYellow.set(buttonState);
             }
 
-            if (myPot.changed())
-            comLinkModule.send(MSG_CONTROL, CTL_POT, potValue);
+            if (myPot.changed()) {
+                comLinkModule.send(MSG_CONTROL, CTL_POT, potValue);
+                printf("val: %u, valSmoothed: %f, midiVal: %u\n", myPot.getValue(), myPot.getValueSmoothed(), myPot.getMidiValue());
+            }
 
             displayDebug->setButtons(buttonState, 1010);
             displayDebug->setPot(potValue);

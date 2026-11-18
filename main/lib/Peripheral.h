@@ -84,14 +84,24 @@ public:
 
   int getValue() const { return _value; }
   float getValueSmoothed() const { return _smoothed; }
+  int getMidiValue() const { return _midiValue; }
 
   void send(MIDIOut &midiOut) override;
 
 private:
   PinHandle _pin;
+
   int _value = 0;
   float _smoothed = 0.0f;
   int _lastSent = -1;
+  int _midiValue = 0; // 0 - 127
+  bool  _primed    = false;
+
+  static constexpr int kOversample = 16;
+  static constexpr float kAlpha = 0.20f;
+  static constexpr float kHysteresis = 0.8f;
+  static constexpr int kRawMin = 140;
+  static constexpr int kRawMax = 4070;
 };
 
 class RotaryEncoder : public PeripheralBase
