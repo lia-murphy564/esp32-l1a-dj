@@ -145,11 +145,8 @@ void RotaryEncoder::send(MIDIOut &midiOut)
 {
    if (_delta != 0)
   {
-    // Relative CC: 64 = no change, 65+ = clockwise, 63- = counter-clockwise.
-    uint8_t value = constrain(64 + _delta, 0, 127);
-
-    // TODO: send `value` the same way Button::send does
-    (void)value;
+    // Relative CC: 64 = no change, 65+ = clockwise, 63- = counter-clockwise
+    midiOut.controlChange(1, 23, constrain(64 + _delta, 0, 127));
   }
 
   _enc_sw.send(midiOut);

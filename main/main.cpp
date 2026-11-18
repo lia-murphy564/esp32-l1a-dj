@@ -38,6 +38,8 @@
 #elif BUILD_TARGET == TARGET_TEST
 //  ---- TEST DEFINES HERE ---- // 
 Peripheral::RotaryEncoder myEncoder{"encoder", PinAddress::GPIO_25, PinAddress::GPIO_26, PinAddress::GPIO_27};
+MIDIOut midiOut;
+MIDIController controller;
 
 #else
     #error "bad target"
@@ -59,7 +61,10 @@ extern "C" void app_main(void)
 
 #elif BUILD_TARGET == TARGET_TEST
 //  ---- TEST SETUP HERE ------ // 
-    myEncoder.setup();
+    // myEncoder.setup();
+    controller.addControl(myEncoder);
+    controller.setOutput(midiOut);
+    controller.setup();
 
 #else
     #error "bad target"
@@ -78,21 +83,24 @@ extern "C" void app_main(void)
 
 #elif BUILD_TARGET == TARGET_TEST
 //  ---- TEST UPDATE HERE ----- // 
-myEncoder.update();
+    // myEncoder.update();
 
     // Encoder state
     static int lastBtn = -1;
     int btn = myEncoder.getValueButton();
 
-    if (myEncoder.changed() || btn != lastBtn)
-    {
-        int d = myEncoder.getDelta();
-        Serial.printf("pos:%d delta:%+d dir:%s SW:%d\n",
-                      myEncoder.getValuePosition(), d,
-                      d > 0 ? "CW" : d < 0 ? "CCW" : "--",
-                      btn);
-        lastBtn = btn;
-    }
+    // if (myEncoder.changed() || btn != lastBtn)
+    // {
+    //     int d = myEncoder.getDelta();
+    //     Serial.printf("pos:%d delta:%+d dir:%s SW:%d\n",
+    //                   myEncoder.getValuePosition(), d,
+    //                   d > 0 ? "CW" : d < 0 ? "CCW" : "--",
+    //                   btn);
+    //     lastBtn = btn;
+    // }
+
+    controller.update();         // calls myEncoder.update()
+    controller.sendMidi();       // calls myEncoder.send(midiOut)
 
 #else
     #error "bad target"
