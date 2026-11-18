@@ -8,11 +8,11 @@
 #include "lib/_CSDHub.h"
 #include "lib/_CSDModule.h"
 
-#define TARGET_TEST         0
-#define TARGET_HUB          1
-#define TARGET_MODULE       2
+#define TARGET_TEST         1
+#define TARGET_HUB          2
+#define TARGET_MODULE       3
 
-#define BUILD_TARGET        0
+#define BUILD_TARGET        1
 
 #define BAUD_RATE           115200
 
@@ -30,8 +30,15 @@
 //                                  SECTION : DEFINES                                  //
 // ----------------------------------------------------------------------------------- //
 #if BUILD_TARGET == TARGET_HUB
+//  ---- HUB DEFINES HERE ----- // 
+
 #elif BUILD_TARGET == TARGET_MODULE
+//  ---- TEST MMODULE HERE ---- // 
+
 #elif BUILD_TARGET == TARGET_TEST
+//  ---- TEST DEFINES HERE ---- // 
+Peripheral::RotaryEncoder myEncoder{"encoder", PinAddress::GPIO_25, PinAddress::GPIO_26, PinAddress::GPIO_27};
+
 #else
     #error "bad target"
 #endif
@@ -46,10 +53,13 @@ extern "C" void app_main(void)
 
 #if BUILD_TARGET == TARGET_HUB
 //  ---- HUB SETUP HERE ------- // 
+
 #elif BUILD_TARGET == TARGET_MODULE
 //  ---- MODULE SETUP HERE ---- // 
+
 #elif BUILD_TARGET == TARGET_TEST
 //  ---- TEST SETUP HERE ------ // 
+    myEncoder.setup();
 
 #else
     #error "bad target"
@@ -68,14 +78,39 @@ extern "C" void app_main(void)
 
 #elif BUILD_TARGET == TARGET_TEST
 //  ---- TEST UPDATE HERE ----- // 
+myEncoder.update();
+
+    // Encoder state
+    static int lastBtn = -1;
+    int btn = myEncoder.getValueButton();
+
+    if (myEncoder.changed() || btn != lastBtn)
+    {
+        int d = myEncoder.getDelta();
+        Serial.printf("pos:%d delta:%+d dir:%s SW:%d\n",
+                      myEncoder.getValuePosition(), d,
+                      d > 0 ? "CW" : d < 0 ? "CCW" : "--",
+                      btn);
+        lastBtn = btn;
+    }
 
 #else
     #error "bad target"
 #endif
-
     vTaskDelay(1);
     } // while(true)
 } // app_main(void)
+
+
+
+
+
+
+
+
+
+
+
 
 // // MIDIController controller;
 // // MIDIOut midiOut;

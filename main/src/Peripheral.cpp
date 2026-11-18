@@ -88,8 +88,8 @@ void Potentiometer::send(MIDIOut &midiOut)
 
 RotaryEncoder::RotaryEncoder(PeripheralID id, PinAddress enc_a, PinAddress enc_b, PinAddress enc_sw)
   : PeripheralBase(id),
-    _enc_a(enc_a, PinMode::Input),
-    _enc_b(enc_b, PinMode::Input),
+    _enc_a(enc_a, PinMode::InputPullup),
+    _enc_b(enc_b, PinMode::InputPullup),
     _enc_sw(id, enc_sw) {}
 
 void RotaryEncoder::setup()
