@@ -29,7 +29,7 @@ public:
 
   void draw(Adafruit_GFX &gfx) override;
 
-  void setButtons(bool btn1, bool btn2);
+  void setButtons(bool btn1, uint8_t btn2);
   void setPot(int value);
   void setLed(bool on);
 };

@@ -143,10 +143,23 @@ void RotaryEncoder::update()
 
 void RotaryEncoder::send(MIDIOut &midiOut)
 {
-   if (_delta != 0)
+  if (_delta != 0)
   {
-    // Relative CC: 64 = no change, 65+ = clockwise, 63- = counter-clockwise
-    midiOut.controlChange(1, 23, constrain(64 + _delta, 0, 127));
+    // NON-RELATIVE CC
+    // // Relative CC: 64 = no change, 65+ = clockwise, 63- = counter-clockwise
+    // midiOut.controlChange(1, 23, constrain(64 + _delta, 0, 127));
+
+    // RELATIVE CC
+    // Syndicate has no relative-encoder mode: send each click as a button press.
+    // CC 24 = clockwise (browser down/next), CC 25 = counter-clockwise (up/prev)
+    uint8_t cc    = _delta > 0 ? 24 : 25;
+    int     steps = std::min(abs((int)_delta), 16);  // fast spin moves several rows
+
+    for (int i = 0; i < steps; i++)
+    {
+      midiOut.controlChange(1, cc, 127);  // press
+      midiOut.controlChange(1, cc, 0);    // release
+    }
   }
 
   _enc_sw.send(midiOut);

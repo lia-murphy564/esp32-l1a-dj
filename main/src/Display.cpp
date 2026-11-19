@@ -34,10 +34,10 @@ void DisplayDebug::draw(Adafruit_GFX &gfx)
   }
 }
 
-void DisplayDebug::setButtons(bool btn1, bool btn2)
+void DisplayDebug::setButtons(bool btn1, uint8_t btn2)
 {
   char buf[22];
-  snprintf(buf, sizeof(buf), "BTN1:%d  BTN2:%d", btn1, btn2);
+  snprintf(buf, sizeof(buf), "ENC_SW:%d  ENC_V:%u", btn1, btn2);
   setLine(1, buf);
 }
 

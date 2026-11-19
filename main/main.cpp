@@ -12,7 +12,7 @@
 #define TARGET_HUB          2
 #define TARGET_MODULE       3
 
-#define BUILD_TARGET        1
+#define BUILD_TARGET        2
 
 #define BAUD_RATE           115200
 
@@ -29,11 +29,46 @@
 // ----------------------------------------------------------------------------------- //
 //                                  SECTION : DEFINES                                  //
 // ----------------------------------------------------------------------------------- //
+
+//  --- COMMON DEFINES HERE --- // 
+enum ControlID : uint8_t { CTL_POT = 0, CTL_ENC_SW = 1, CTL_ENC_V = 2 };
+constexpr uint8_t MSG_CONTROL = 1;
+
+
 #if BUILD_TARGET == TARGET_HUB
 //  ---- HUB DEFINES HERE ----- // 
+Peripheral::Oled_SSD1306 myDisplay("oled");
+DisplayDebug *displayDebug = new DisplayDebug;
+MIDIOut midiOut;
+MIDIController controller;
+Peripheral::LED myledblue("ledblue", PinAddress::GPIO_25);
+Peripheral::LED myledwhite("ledwhite", PinAddress::GPIO_26);
+Peripheral::LED myledgreen("ledgreen", PinAddress::GPIO_27, true);
+ComLink_ESPNow comLink(ComRole::Hub);
+
 
 #elif BUILD_TARGET == TARGET_MODULE
-//  ---- TEST MMODULE HERE ---- // 
+//  ---- MODULE DEFINES HERE --- // 
+
+Peripheral::Multiplexor mux(
+    "mux",
+    PinAddress::GPIO_5,    // S0
+    PinAddress::GPIO_18,   // S1
+    PinAddress::GPIO_19,   // S2
+    PinAddress::GPIO_23,   // S3
+    PinAddress::GPIO_32    // SEL
+); 
+
+Peripheral::RotaryEncoder myEncoder{"encoder", PinAddress::GPIO_25, PinAddress::GPIO_26, PinAddress::GPIO_27};
+Peripheral::Potentiometer myPot("pot", PinAddress::GPIO_34);
+
+Peripheral::Oled_SSD1306 myDisplay("oled");
+DisplayDebug *displayDebug = new DisplayDebug;
+
+MIDIOut midiOut;
+MIDIController controller;
+
+ComLink_ESPNow comLink(ComRole::Module);
 
 #elif BUILD_TARGET == TARGET_TEST
 //  ---- TEST DEFINES HERE ---- // 
@@ -52,12 +87,36 @@ extern "C" void app_main(void)
 {
     initArduino();
     Serial.begin(BAUD_RATE);
+    esp_log_level_set("*", ESP_LOG_NONE);
 
 #if BUILD_TARGET == TARGET_HUB
 //  ---- HUB SETUP HERE ------- // 
+    Wire.begin(21, 22); // SDA, SCL 
+
+    myledblue.setup();
+    myledwhite.setup();
+    myledgreen.setup();
+
+    myDisplay.setDisplay(*displayDebug);
+    myDisplay.setup();
+
+    controller.setOutput(midiOut);
+    controller.setup();
+
+    comLink.begin();
+
 
 #elif BUILD_TARGET == TARGET_MODULE
 //  ---- MODULE SETUP HERE ---- // 
+    Wire.begin(21, 22); // SDA, SCL 
+
+    myDisplay.setDisplay(*displayDebug);
+    myDisplay.setup();
+
+    myPot.setup();
+    myEncoder.setup();
+
+    comLink.begin();
 
 #elif BUILD_TARGET == TARGET_TEST
 //  ---- TEST SETUP HERE ------ // 
@@ -77,9 +136,79 @@ extern "C" void app_main(void)
     {
 #if BUILD_TARGET == TARGET_HUB
 //  ---- HUB UPDATE HERE ------ // 
+        comLink.update();
+
+        // static uint32_t lastBeat = 0;
+        // if (millis() - lastBeat > 1000) {
+        //     lastBeat = millis();
+        //     Serial.println("hub alive");
+        // }
+
+        myledblue.update();
+        myledwhite.update();
+        myledgreen.update();
+
+        static int potv = 0, encswval = 0, encv = 0;
+        Event e;
+        
+        while (comLink.receive(e))
+        {
+            // Serial.printf("rx ctl:%d val:%d\n", e.msg.control, e.msg.value);
+
+            switch (e.msg.control)
+            {
+                case CTL_POT: 
+                    potv = e.msg.value;
+                    midiOut.controlChange(1, 20, std::clamp(potv, 0, 127));
+                    // myledblue.toggle();
+                    break;
+                case CTL_ENC_SW: 
+                    encswval = e.msg.value;
+                    midiOut.controlChange(1, 21, encswval == LOW ? 127 : 0);
+                    // myledwhite.toggle();
+                    break;
+                case CTL_ENC_V:
+                    encv = e.msg.value;  
+                    midiOut.controlChange(1, 22, std::clamp(encv, 0, 127));
+                    // myledgreen.toggle();
+                    break;
+            }
+        }
+
+        controller.update();
+
+        displayDebug->setPot(potv);
+        displayDebug->setButtons(encswval, encv);
+        myDisplay.setDisplay(*displayDebug);
+        
+        myDisplay.update();
 
 #elif BUILD_TARGET == TARGET_MODULE
 //  ---- MODULE UPDATE HERE --- // 
+
+        mux.update();
+        myPot.update();
+        myEncoder.update();
+
+        displayDebug->setPot(myPot.getMidiValue());
+        displayDebug->setButtons(myEncoder.getValueButton(), myEncoder.getValuePosition());
+
+        myDisplay.setDisplay(*displayDebug);
+        myDisplay.update();
+
+        comLink.update();
+
+        if (myPot.changed()) 
+        {
+            Serial.printf("tx pot %d\n", myPot.getMidiValue());
+            comLink.send(MSG_CONTROL, CTL_POT, myPot.getMidiValue());
+        }
+        // else // encoder
+        // {
+        //     comLink.send(MSG_CONTROL, CTL_ENC_SW, myEncoder.getValueButton());
+        //     comLink.send(MSG_CONTROL, CTL_ENC_V, myEncoder.getValuePosition());
+        // }
+
 
 #elif BUILD_TARGET == TARGET_TEST
 //  ---- TEST UPDATE HERE ----- // 
